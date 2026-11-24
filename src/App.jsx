@@ -5,7 +5,6 @@ import Element from './components/Element.jsx'
 const SIZE = 1080
 const SCALE = 0.5
 const STORAGE_KEY = 'designly.project'
-
 let uid = 1
 
 const INITIAL = [
@@ -287,6 +286,81 @@ export default function App() {
     flash('New project ✓')
   }
 
+  // ---- Microsoft Office exports ----
+
+  // PowerPoint: one slide containing the design as a full-bleed image.
+  const exportPptx = async () => {
+    if (!canvasRef.current || exporting) return
+    setExporting(true)
+    try {
+      const url = await renderDataUrl('image/png')
+      const { default: PptxGenJS } = await import('pptxgenjs')
+      const pptx = new PptxGenJS()
+      pptx.defineLayout({ name: 'SQUARE', width: 10, height: 10 })
+      pptx.layout = 'SQUARE'
+      const slide = pptx.addSlide()
+      slide.addImage({ data: url, x: 0, y: 0, w: 10, h: 10 })
+      const blob = await pptx.write({ outputType: 'blob' })
+      const objUrl = URL.createObjectURL(blob)
+      download(objUrl, 'design.pptx')
+      setTimeout(() => URL.revokeObjectURL(objUrl), 5000)
+      flash('PowerPoint saved ✓')
+    } catch {
+      flash('PowerPoint export failed ✕')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  // Word: document with the design image plus editable text elements.
+  const exportDocx = async () => {
+    if (!canvasRef.current || exporting) return
+    setExporting(true)
+    try {
+      const url = await renderDataUrl('image/png')
+      const blob = await (await fetch(url)).blob()
+      const { Document, Packer, Paragraph, ImageRun, TextRun, HeadingLevel } = await import('docx')
+      const children = [
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: blob,
+              transformation: { width: 400, height: 400 },
+              type: 'png',
+            }),
+          ],
+        }),
+        new Paragraph({ text: '' }),
+        new Paragraph({ text: 'Design text:', headingLevel: HeadingLevel.HEADING_2 }),
+        ...elements
+          .filter((el) => el.type === 'text')
+          .map(
+            (el) =>
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: el.text || '',
+                    bold: Number(el.fontWeight) >= 700,
+                    size: Math.round((el.fontSize || 24) * 1.6),
+                    color: (el.fill || '#111111').replace('#', ''),
+                  }),
+                ],
+              }),
+          ),
+      ]
+      const doc = new Document({ sections: [{ children }] })
+      const out = await Packer.toBlob(doc)
+      const objUrl = URL.createObjectURL(out)
+      download(objUrl, 'design.docx')
+      setTimeout(() => URL.revokeObjectURL(objUrl), 5000)
+      flash('Word saved ✓')
+    } catch {
+      flash('Word export failed ✕')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -311,6 +385,9 @@ export default function App() {
                   {fmt.label} <span className="ext">.{fmt.ext}</span>
                 </button>
               ))}
+              <div className="menu-sep" />
+              <button className="menu-item" onClick={exportPptx}>PowerPoint <span className="ext">.pptx</span></button>
+              <button className="menu-item" onClick={exportDocx}>Word <span className="ext">.docx</span></button>
               <div className="menu-sep" />
               <button className="menu-item" onClick={exportJson}>Project file <span className="ext">.json</span></button>
               <button className="menu-item" onClick={sharePng}>📤 Share (phone)</button>
