@@ -148,6 +148,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: auto;
+  touch-action: pan-x pan-y;
   background: radial-gradient(1200px 800px at 50% 20%, #131c33, var(--bg));
 }
 
@@ -172,6 +173,9 @@ body {
   position: absolute;
   cursor: move;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  contain: layout style;
 }
 
 .el.selected {
@@ -185,6 +189,8 @@ body {
 .el.editing {
   cursor: text;
   user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
 }
 
 .handle {

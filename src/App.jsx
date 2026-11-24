@@ -61,11 +61,17 @@ export default function App() {
     setShowProps(true)
   }
 
-  // Drag & resize, driven by window-level pointer listeners.
+  // Drag & resize, throttled with requestAnimationFrame for smooth mobile
+  // performance: at most one state update per frame.
   useEffect(() => {
-    const move = (e) => {
+    let raf = 0
+    let lastEvent = null
+    const apply = () => {
+      raf = 0
+      const e = lastEvent
+      lastEvent = null
       const d = dragRef.current
-      if (!d || !canvasRef.current) return
+      if (!e || !d || !canvasRef.current) return
       const rect = canvasRef.current.getBoundingClientRect()
       if (d.mode === 'drag') {
         const x = Math.round((e.clientX - rect.left) / scale - d.dx)
@@ -80,14 +86,26 @@ export default function App() {
         update(d.id, { width: Math.min(SIZE * 2, w), height: Math.min(SIZE * 2, h) })
       }
     }
+    const move = (e) => {
+      lastEvent = e
+      if (!raf) raf = requestAnimationFrame(apply)
+    }
     const up = () => {
       dragRef.current = null
+      lastEvent = null
+      if (raf) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      }
     }
-    window.addEventListener('pointermove', move)
+    window.addEventListener('pointermove', move, { passive: true })
     window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
     return () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      if (raf) cancelAnimationFrame(raf)
     }
   }, [update, scale])
 

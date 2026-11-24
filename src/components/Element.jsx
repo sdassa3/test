@@ -35,7 +35,8 @@ export default function Element({ el, selected, onSelect, onChange, onDragStart,
       onPointerDown={(e) => {
         if (el.editing) return
         e.stopPropagation()
-        onSelect(el.id)
+        e.preventDefault() // stop touch scrolling / text selection while dragging
+        if (!selected) onSelect(el.id)
         onDragStart(e, el)
       }}
       onDoubleClick={(e) => {
@@ -45,7 +46,7 @@ export default function Element({ el, selected, onSelect, onChange, onDragStart,
         }
       }}
     >
-      {shape && <div style={{ ...shape, width: '100%', height: '100%' }} />}
+      {shape && <div style={{ ...shape, width: '100%', height: '100%', willChange: 'transform' }} />}
       {el.type === 'image' && (
         <img
           src={el.src}
