@@ -1,9 +1,9 @@
-// Designly service worker — offline-first PWA caching.
+// TinyPress service worker — offline-first PWA caching.
 // Strategy:
 //   /assets/*  → cache-first (Vite hashes filenames, so cached copies are immutable)
 //   / and pages → network-first with cache fallback (updates arrive, offline still works)
-const VERSION = 'v1'
-const CACHE = `designly-${VERSION}`
+const VERSION = 'v2' // bumped: brand & app completely changed
+const CACHE = `tinypress-${VERSION}`
 const PRECACHE = ['/', '/manifest.json', '/icons/icon-512.png']
 
 self.addEventListener('install', (e) => {

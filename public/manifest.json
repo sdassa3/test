@@ -1,13 +1,13 @@
 {
-  "name": "Designly — Visual Design Editor",
-  "short_name": "Designly",
-  "description": "Drag-and-drop visual design editor: text, shapes, images, multi-format export.",
+  "name": "TinyPress — Compress Images & Files",
+  "short_name": "TinyPress",
+  "description": "Compress images and any file to a smaller size — free, private, in your browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0b1020",
-  "theme_color": "#0b1020",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0a0e1a",
   "icons": [
     {
       "src": "/icons/icon-192.png",
