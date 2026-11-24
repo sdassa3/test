@@ -38,6 +38,7 @@ export default function App() {
   const [elements, setElements] = useState(saved.current?.elements ?? INITIAL)
   const [selectedId, setSelectedId] = useState(null)
   const [bg, setBg] = useState(saved.current?.background ?? '#f8fafc')
+  const [showDonate, setShowDonate] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [savedFlash, setSavedFlash] = useState('')
   const [dragOver, setDragOver] = useState(false)
@@ -460,6 +461,7 @@ export default function App() {
           <button className="btn" onClick={saveProject} title="Download the editable design file to your device">
             💾 Save{unsaved && <span className="unsaved-dot" />}
           </button>
+          <button className="btn donate" onClick={() => setShowDonate(true)}>❤ Donate</button>
           <div className="menu-wrap">
             <button className="btn primary" disabled={exporting}>
               {exporting ? '…' : '⬇ Export'}
@@ -636,6 +638,50 @@ export default function App() {
           </p>
         </aside>
       </div>
+
+      {showDonate && (
+        <div className="modal-backdrop" onClick={() => setShowDonate(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowDonate(false)}>✕</button>
+            <div className="donate-heart">❤</div>
+            <h2>Support Designly</h2>
+            <p className="donate-sub">
+              Designly is free, has no ads, and runs entirely in your browser.
+              If it helps you make things you love, a small donation keeps it that way 💙
+            </p>
+            <div className="donate-methods">
+              <a
+                className="donate-btn paypal"
+                href="https://www.paypal.com/paypalme/mialstudio"
+                target="_blank"
+                rel="noreferrer"
+              >
+                PayPal
+              </a>
+              <a
+                className="donate-btn kofi"
+                href="https://ko-fi.com/mialstudio"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ko-fi
+              </a>
+              <a
+                className="donate-btn btc"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigator.clipboard?.writeText('bc1qexampleaddressreplace0withyourswallet')
+                  alert('Bitcoin address copied — paste it in your wallet app.')
+                }}
+              >
+                ₿ Bitcoin
+              </a>
+            </div>
+            <p className="donate-note">You are testing the donate feature — payments are not live yet.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

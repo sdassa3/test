@@ -204,6 +204,127 @@ body {
   50% { opacity: 0.45; }
 }
 
+/* ---------- Donate button + modal ---------- */
+.btn.donate {
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.35);
+}
+
+.btn.donate:hover {
+  background: rgba(244, 114, 182, 0.12);
+  border-color: #f472b6;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 16, 0.75);
+  backdrop-filter: blur(4px);
+  animation: fadein 0.15s ease;
+  padding: 20px;
+}
+
+.modal {
+  position: relative;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  animation: pop 0.2s ease;
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal h2 {
+  margin: 8px 0 10px;
+  font-size: 22px;
+}
+
+.donate-heart {
+  font-size: 40px;
+  animation: pulse 1.5s ease infinite;
+}
+
+.donate-sub {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0 0 22px;
+}
+
+.donate-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.donate-btn {
+  display: block;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.donate-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.donate-btn.paypal {
+  background: #0070ba;
+}
+
+.donate-btn.kofi {
+  background: #ff5e5b;
+}
+
+.donate-btn.btc {
+  background: #f7931a;
+}
+
+.donate-note {
+  margin: 18px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
 @keyframes fadein {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: none; }
