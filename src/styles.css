@@ -1,0 +1,283 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0b1120;
+  --panel: #111a2e;
+  --panel-2: #16213a;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e2e8f0;
+  --muted: #8fa3bf;
+  --accent: #38bdf8;
+  --accent-2: #818cf8;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 18px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel-2);
+  transition: 0.15s;
+  font-family: inherit;
+}
+
+.btn:hover {
+  filter: brightness(1.25);
+}
+
+.btn.primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #0b1120;
+}
+
+.btn.danger {
+  background: #3b1d2a;
+  color: #f87171;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- Layout ---------- */
+.main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Left toolbar ---------- */
+.toolbar {
+  width: 72px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 0;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tool {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: 0.15s;
+  font-family: inherit;
+}
+
+.tool:hover {
+  background: var(--panel-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.t-icon {
+  font-size: 17px;
+}
+
+/* ---------- Canvas stage ---------- */
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: radial-gradient(1200px 800px at 50% 20%, #131c33, var(--bg));
+}
+
+.canvas-wrap {
+  width: 540px;
+  height: 540px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.canvas {
+  width: 1080px;
+  height: 1080px;
+  transform-origin: 0 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ---------- Elements ---------- */
+.el {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+}
+
+.el.selected {
+  outline: 2px solid var(--accent);
+}
+
+.canvas.exporting .el.selected {
+  outline: none;
+}
+
+.el.editing {
+  cursor: text;
+  user-select: text;
+}
+
+.handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: -8px;
+  bottom: -8px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 3px;
+  cursor: nwse-resize;
+  z-index: 10;
+}
+
+.canvas.exporting .handle {
+  display: none;
+}
+
+/* ---------- Right properties panel ---------- */
+.props {
+  width: 260px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.props h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.field input[type='color'] {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.field input[type='number'],
+.field select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row .btn {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 12px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 20px;
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
