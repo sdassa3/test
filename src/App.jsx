@@ -40,6 +40,8 @@ export default function App() {
   const [bg, setBg] = useState(saved.current?.background ?? '#f8fafc')
   const [exporting, setExporting] = useState(false)
   const [savedFlash, setSavedFlash] = useState('')
+  const [dragOver, setDragOver] = useState(false)
+  const [unsaved, setUnsaved] = useState(false)
   const [scale, setScale] = useState(SCALE)
   const [showProps, setShowProps] = useState(false)
   const canvasRef = useRef(null)
@@ -54,6 +56,34 @@ export default function App() {
     if (maxId >= uid) uid = maxId + 1
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Track unsaved changes: anything after the first render counts as an
+  // edit; loading a project file or starting fresh resets the flag.
+  const firstRender = useRef(true)
+  const skipDirty = useRef(false)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    if (skipDirty.current) {
+      skipDirty.current = false
+      return
+    }
+    setUnsaved(true)
+  }, [elements, bg])
+
+  // Warn before leaving/refreshing with unsaved changes (native browser dialog).
+  useEffect(() => {
+    if (!unsaved) return
+    const warn = (e) => {
+      e.preventDefault()
+      e.returnValue = '' // required by Chrome/Edge
+      return ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [unsaved])
 
   // Persist the project locally after every change (debounced).
   useEffect(() => {
@@ -228,34 +258,49 @@ export default function App() {
     }
   }
 
-  // Save the project as a .designly JSON file (re-openable later).
-  const exportJson = () => {
+  // Save the design to the user's device as an editable project file.
+  const saveProject = () => {
     const data = { app: 'designly', version: 1, background: bg, elements }
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
-    download(url, 'project.designly.json')
+    download(url, 'design.designly.json')
     setTimeout(() => URL.revokeObjectURL(url), 5000)
-    flash('Project file saved ✓')
+    setUnsaved(false)
+    flash('Saved to device ✓')
   }
 
-  // Open a .designly JSON file and replace the current design.
-  const importJson = (e) => {
-    const file = e.target.files?.[0]
+  // Load a saved project file back into the editor.
+  const loadProjectFile = (file) => {
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result)
         if (!data || !Array.isArray(data.elements)) throw new Error('bad file')
+        skipDirty.current = true
         setElements(data.elements)
         if (typeof data.background === 'string') setBg(data.background)
         setSelectedId(null)
-        flash('Project loaded ✓')
+        setShowProps(false)
+        setUnsaved(false)
+        flash('Design loaded ✓')
       } catch {
         flash('Invalid project file ✕')
       }
     }
     reader.readAsText(file)
+  }
+
+  const importJson = (e) => {
+    loadProjectFile(e.target.files?.[0])
     e.target.value = ''
+  }
+
+  // Drag & drop a saved project file anywhere to reopen it.
+  const onDropProject = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = [...(e.dataTransfer?.files || [])].find((f) => f.name.endsWith('.json'))
+    if (file) loadProjectFile(file)
   }
 
   // Native share sheet on phones; falls back to a PNG download.
@@ -280,9 +325,11 @@ export default function App() {
 
   const newProject = () => {
     if (!confirm('Start a new empty design? Unsaved work in this browser stays until you overwrite it.')) return
+    skipDirty.current = true
     setElements([])
     setSelectedId(null)
     setBg('#f8fafc')
+    setUnsaved(false)
     flash('New project ✓')
   }
 
@@ -386,7 +433,18 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div
+      className={`app${dragOver ? ' drag-over' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        if (e.dataTransfer?.types?.includes('Files')) setDragOver(true)
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setDragOver(false)
+      }}
+      onDrop={onDropProject}
+    >
+      {dragOver && <div className="drop-overlay">📥 Drop your .json design file to open it</div>}
       <header className="topbar">
         <div className="logo">✦ Designly</div>
         {savedFlash && <span className="flash">{savedFlash}</span>}
@@ -399,6 +457,9 @@ export default function App() {
             📂 Open
             <input type="file" accept=".json,application/json" hidden onChange={importJson} />
           </label>
+          <button className="btn" onClick={saveProject} title="Download the editable design file to your device">
+            💾 Save{unsaved && <span className="unsaved-dot" />}
+          </button>
           <div className="menu-wrap">
             <button className="btn primary" disabled={exporting}>
               {exporting ? '…' : '⬇ Export'}
@@ -414,7 +475,7 @@ export default function App() {
               <button className="menu-item" onClick={exportDocx}>Word <span className="ext">.docx</span></button>
               <button className="menu-item" onClick={exportPdf}>PDF document <span className="ext">.pdf</span></button>
               <div className="menu-sep" />
-              <button className="menu-item" onClick={exportJson}>Project file <span className="ext">.json</span></button>
+              <button className="menu-item" onClick={saveProject}>💾 Project file <span className="ext">.json</span></button>
               <button className="menu-item" onClick={sharePng}>📤 Share (phone)</button>
               <button className="menu-item danger-item" onClick={newProject}>🆕 New design</button>
             </div>

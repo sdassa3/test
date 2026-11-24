@@ -160,6 +160,50 @@ body {
   animation: fadein 0.2s ease;
 }
 
+/* ---------- Drag & drop project file overlay ---------- */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 12, 20, 0.85);
+  border: 3px dashed #38bdf8;
+  border-radius: 12px;
+  color: #38bdf8;
+  font-size: 18px;
+  font-weight: 700;
+  pointer-events: none;
+  animation: fadein 0.15s ease;
+}
+
+.drag-over .canvas-wrap {
+  outline: 2px solid #38bdf8;
+}
+
+/* ---------- Unsaved-changes indicator on the Save button ---------- */
+.btn {
+  position: relative;
+}
+
+.unsaved-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid var(--bg);
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 @keyframes fadein {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: none; }
