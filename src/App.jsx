@@ -38,49 +38,6 @@ export default function App() {
   const [elements, setElements] = useState(saved.current?.elements ?? INITIAL)
   const [selectedId, setSelectedId] = useState(null)
   const [bg, setBg] = useState(saved.current?.background ?? '#f8fafc')
-  const [showDonate, setShowDonate] = useState(false)
-  const [paypalFailed, setPaypalFailed] = useState(false)
-  const paypalRef = useRef(null)
-
-  // Load the PayPal hosted-button SDK when the donate modal opens, then
-  // render the button into the placeholder. Falls back to a plain link.
-  useEffect(() => {
-    if (!showDonate) return
-    let cancelled = false
-    const CLIENT_ID = 'BAAdjhBAcaQcMzgDFENZ1plS8E8FjamjoSMYAUfseWWB08cH_AOSUWx50wIgV-Dv9VSSKzMnkHujduOxto'
-    const BUTTON_ID = 'YH7TD947864HY'
-
-    const render = () => {
-      try {
-        window.paypal
-          .HostedButtons({
-            hostedButtonId: BUTTON_ID,
-          })
-          .render(paypalRef.current)
-      } catch {
-        if (!cancelled) setPaypalFailed(true)
-      }
-    }
-
-    const existing = document.getElementById('paypal-sdk')
-    if (window.paypal?.HostedButtons) {
-      render()
-    } else if (existing) {
-      existing.addEventListener('load', render)
-      existing.addEventListener('error', () => !cancelled && setPaypalFailed(true))
-    } else {
-      const s = document.createElement('script')
-      s.id = 'paypal-sdk'
-      s.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&components=hosted-buttons&disable-funding=venmo&currency=MYR`
-      s.async = true
-      s.onload = () => !cancelled && render()
-      s.onerror = () => !cancelled && setPaypalFailed(true)
-      document.body.appendChild(s)
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [showDonate])
   const [exporting, setExporting] = useState(false)
   const [savedFlash, setSavedFlash] = useState('')
   const [dragOver, setDragOver] = useState(false)
@@ -503,7 +460,6 @@ export default function App() {
           <button className="btn" onClick={saveProject} title="Download the editable design file to your device">
             💾 Save{unsaved && <span className="unsaved-dot" />}
           </button>
-          <button className="btn donate" onClick={() => setShowDonate(true)}>❤ Donate</button>
           <div className="menu-wrap">
             <button className="btn primary" disabled={exporting}>
               {exporting ? '…' : '⬇ Export'}
@@ -680,53 +636,6 @@ export default function App() {
           </p>
         </aside>
       </div>
-
-      {showDonate && (
-        <div className="modal-backdrop" onClick={() => setShowDonate(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowDonate(false)}>✕</button>
-            <div className="donate-heart">❤</div>
-            <h2>Support Designly</h2>
-            <p className="donate-sub">
-              Designly is free, has no ads, and runs entirely in your browser.
-              If it helps you make things you love, a small donation keeps it that way 💙
-            </p>
-            <div className="donate-methods">
-              <div className="paypal-hosted" ref={paypalRef}>
-                {paypalFailed && (
-                  <a
-                    className="donate-btn paypal"
-                    href="https://www.paypal.com/ncp/payment/YH7TD947864HY"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    PayPal
-                  </a>
-                )}
-              </div>
-              <a
-                className="donate-btn kofi"
-                href="https://ko-fi.com/mialstudio"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ko-fi
-              </a>
-              <a
-                className="donate-btn btc"
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigator.clipboard?.writeText('bc1qexampleaddressreplace0withyourswallet')
-                  alert('Bitcoin address copied — paste it in your wallet app.')
-                }}
-              >
-                ₿ Bitcoin
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
