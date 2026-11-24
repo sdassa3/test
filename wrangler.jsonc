@@ -5,8 +5,5 @@
   "assets": {
     "directory": "./dist"
   },
-  "workers_dev": true,
-  "routes": [
-    { "pattern": "mial.download", "custom_domain": true }
-  ]
+  "workers_dev": true
 }

@@ -26,6 +26,7 @@ body {
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app {
@@ -151,8 +152,6 @@ body {
 }
 
 .canvas-wrap {
-  width: 540px;
-  height: 540px;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   border-radius: 4px;
@@ -280,4 +279,108 @@ body {
   line-height: 1.7;
   border-top: 1px solid var(--border);
   padding-top: 12px;
+}
+
+/* ---------- Mobile-only elements (hidden on desktop) ---------- */
+.mobile-only,
+.close-props {
+  display: none;
+}
+
+/* ---------- Responsive: phones ---------- */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 12px;
+    height: 52px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  .btn {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .toolbar {
+    width: 58px;
+    padding: 8px 0;
+    gap: 4px;
+  }
+
+  .tool {
+    width: 46px;
+    height: 46px;
+    font-size: 10px;
+  }
+
+  .stage {
+    padding: 8px;
+  }
+
+  /* Properties become a bottom sheet */
+  .props {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: auto;
+    max-height: 55vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    z-index: 100;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+
+  .props.open {
+    transform: translateY(0);
+  }
+
+  .mobile-only {
+    display: flex;
+  }
+
+  .props-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .props-head h3 {
+    margin-bottom: 0;
+  }
+
+  .close-props {
+    display: block;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .hint {
+    display: none;
+  }
+
+  .el.selected {
+    outline-width: 3px;
+  }
+
+  .handle {
+    width: 22px;
+    height: 22px;
+    right: -11px;
+    bottom: -11px;
+  }
 }

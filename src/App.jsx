@@ -18,10 +18,31 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [bg, setBg] = useState('#f8fafc')
   const [exporting, setExporting] = useState(false)
+  const [scale, setScale] = useState(SCALE)
+  const [showProps, setShowProps] = useState(false)
   const canvasRef = useRef(null)
+  const stageRef = useRef(null)
   const dragRef = useRef(null)
 
   const selected = elements.find((e) => e.id === selectedId) || null
+
+  // Fit the canvas to the available space (phones get a smaller scale).
+  useEffect(() => {
+    const fit = () => {
+      const el = stageRef.current
+      if (!el) return
+      const s = Math.min((el.clientWidth - 20) / SIZE, (el.clientHeight - 20) / SIZE, 0.6)
+      setScale(Math.max(0.15, s))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    if (stageRef.current) ro.observe(stageRef.current)
+    window.addEventListener('resize', fit)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', fit)
+    }
+  }, [])
 
   const update = useCallback((id, patch) => {
     setElements((els) => els.map((e) => (e.id === id ? { ...e, ...patch } : e)))
@@ -37,6 +58,7 @@ export default function App() {
     if (type === 'image') Object.assign(base, { type, src: extra.src, fill: 'transparent' })
     setElements((els) => [...els, base])
     setSelectedId(base.id)
+    setShowProps(true)
   }
 
   // Drag & resize, driven by window-level pointer listeners.
@@ -46,15 +68,15 @@ export default function App() {
       if (!d || !canvasRef.current) return
       const rect = canvasRef.current.getBoundingClientRect()
       if (d.mode === 'drag') {
-        const x = Math.round((e.clientX - rect.left) / SCALE - d.dx)
-        const y = Math.round((e.clientY - rect.top) / SCALE - d.dy)
+        const x = Math.round((e.clientX - rect.left) / scale - d.dx)
+        const y = Math.round((e.clientY - rect.top) / scale - d.dy)
         update(d.id, {
           x: Math.max(-200, Math.min(SIZE, x)),
           y: Math.max(-200, Math.min(SIZE, y)),
         })
       } else {
-        const w = Math.max(20, Math.round(d.w + (e.clientX - d.sx) / SCALE))
-        const h = Math.max(20, Math.round(d.h + (e.clientY - d.sy) / SCALE))
+        const w = Math.max(20, Math.round(d.w + (e.clientX - d.sx) / scale))
+        const h = Math.max(20, Math.round(d.h + (e.clientY - d.sy) / scale))
         update(d.id, { width: Math.min(SIZE * 2, w), height: Math.min(SIZE * 2, h) })
       }
     }
@@ -67,9 +89,10 @@ export default function App() {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
-  }, [update])
+  }, [update, scale])
 
-  // Keyboard: delete removes selected element, escape deselects.
+  // Keyboard: delete removes selected element, escape deselects. Skip on
+  // touch devices where Delete/Backspace is not meaningful.
   useEffect(() => {
     const key = (e) => {
       if (selectedId == null) return
@@ -84,6 +107,14 @@ export default function App() {
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [selectedId])
+
+  // Deselect when tapping the stage background (touch-friendly).
+  const onStagePointerDown = (e) => {
+    if (e.target === e.currentTarget || e.target.classList.contains('canvas-wrap')) {
+      setSelectedId(null)
+      setShowProps(false)
+    }
+  }
 
   const onImageUpload = (e) => {
     const file = e.target.files && e.target.files[0]
@@ -136,14 +167,15 @@ export default function App() {
           <button className="tool" onClick={() => add('circle')}><span className="t-icon">●</span>Circle</button>
           <button className="tool" onClick={() => add('triangle')}><span className="t-icon">▲</span>Tri</button>
           <button className="tool" onClick={() => add('line')}><span className="t-icon">─</span>Line</button>
+          <button className="tool mobile-only" onClick={() => setShowProps(true)}><span className="t-icon">⚙</span>Props</button>
         </aside>
 
-        <main className="stage">
-          <div className="canvas-wrap" onPointerDown={() => setSelectedId(null)}>
+        <main className="stage" ref={stageRef} onPointerDown={onStagePointerDown}>
+          <div className="canvas-wrap" style={{ width: SIZE * scale, height: SIZE * scale }}>
             <div
               ref={canvasRef}
               className={`canvas${exporting ? ' exporting' : ''}`}
-              style={{ background: bg, transform: `scale(${SCALE})` }}
+              style={{ background: bg, transform: `scale(${scale})` }}
             >
               {elements.map((el) => (
                 <Element
@@ -157,8 +189,8 @@ export default function App() {
                     dragRef.current = {
                       mode: 'drag',
                       id: target.id,
-                      dx: (e.clientX - rect.left) / SCALE - target.x,
-                      dy: (e.clientY - rect.top) / SCALE - target.y,
+                      dx: (e.clientX - rect.left) / scale - target.x,
+                      dy: (e.clientY - rect.top) / scale - target.y,
                     }
                   }}
                   onResizeStart={(e, target) => {
@@ -177,10 +209,13 @@ export default function App() {
           </div>
         </main>
 
-        <aside className="props">
+        <aside className={`props${showProps ? ' open' : ''}`}>
           {selected ? (
             <>
-              <h3>{selected.type} properties</h3>
+              <div className="props-head">
+                <h3>{selected.type} properties</h3>
+                <button className="close-props" onClick={() => setShowProps(false)}>✕</button>
+              </div>
               <div className="field">
                 <label>Color</label>
                 <input
@@ -259,7 +294,10 @@ export default function App() {
             </>
           ) : (
             <>
-              <h3>Canvas</h3>
+              <div className="props-head">
+                <h3>Canvas</h3>
+                <button className="close-props" onClick={() => setShowProps(false)}>✕</button>
+              </div>
               <div className="field">
                 <label>Background</label>
                 <input type="color" value={bg} onChange={(e) => setBg(e.target.value)} />
