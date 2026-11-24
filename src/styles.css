@@ -287,6 +287,25 @@ body {
   gap: 10px;
 }
 
+.paypal-hosted iframe {
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+/* Placeholder gets a min-height so the modal doesn't jump while the SDK loads */
+.paypal-hosted:empty {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.paypal-hosted:empty::after {
+  content: 'Loading PayPal…';
+}
+
 .donate-btn {
   display: block;
   padding: 12px;

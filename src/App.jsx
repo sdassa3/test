@@ -39,6 +39,48 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [bg, setBg] = useState(saved.current?.background ?? '#f8fafc')
   const [showDonate, setShowDonate] = useState(false)
+  const [paypalFailed, setPaypalFailed] = useState(false)
+  const paypalRef = useRef(null)
+
+  // Load the PayPal hosted-button SDK when the donate modal opens, then
+  // render the button into the placeholder. Falls back to a plain link.
+  useEffect(() => {
+    if (!showDonate) return
+    let cancelled = false
+    const CLIENT_ID = 'BAAdjhBAcaQcMzgDFENZ1plS8E8FjamjoSMYAUfseWWB08cH_AOSUWx50wIgV-Dv9VSSKzMnkHujduOxto'
+    const BUTTON_ID = 'YH7TD947864HY'
+
+    const render = () => {
+      try {
+        window.paypal
+          .HostedButtons({
+            hostedButtonId: BUTTON_ID,
+          })
+          .render(paypalRef.current)
+      } catch {
+        if (!cancelled) setPaypalFailed(true)
+      }
+    }
+
+    const existing = document.getElementById('paypal-sdk')
+    if (window.paypal?.HostedButtons) {
+      render()
+    } else if (existing) {
+      existing.addEventListener('load', render)
+      existing.addEventListener('error', () => !cancelled && setPaypalFailed(true))
+    } else {
+      const s = document.createElement('script')
+      s.id = 'paypal-sdk'
+      s.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&components=hosted-buttons&disable-funding=venmo&currency=MYR`
+      s.async = true
+      s.onload = () => !cancelled && render()
+      s.onerror = () => !cancelled && setPaypalFailed(true)
+      document.body.appendChild(s)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [showDonate])
   const [exporting, setExporting] = useState(false)
   const [savedFlash, setSavedFlash] = useState('')
   const [dragOver, setDragOver] = useState(false)
@@ -650,14 +692,18 @@ export default function App() {
               If it helps you make things you love, a small donation keeps it that way 💙
             </p>
             <div className="donate-methods">
-              <a
-                className="donate-btn paypal"
-                href="https://www.paypal.com/ncp/payment/YH7TD947864HY"
-                target="_blank"
-                rel="noreferrer"
-              >
-                PayPal
-              </a>
+              <div className="paypal-hosted" ref={paypalRef}>
+                {paypalFailed && (
+                  <a
+                    className="donate-btn paypal"
+                    href="https://www.paypal.com/ncp/payment/YH7TD947864HY"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    PayPal
+                  </a>
+                )}
+              </div>
               <a
                 className="donate-btn kofi"
                 href="https://ko-fi.com/mialstudio"
@@ -678,7 +724,6 @@ export default function App() {
                 ₿ Bitcoin
               </a>
             </div>
-            <p className="donate-note">You are testing the donate feature — payments are not live yet.</p>
           </div>
         </div>
       )}
