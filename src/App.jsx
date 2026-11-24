@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { toPng } from 'html-to-image'
+import { toPng, toJpeg, toSvg, toCanvas } from 'html-to-image'
 import Element from './components/Element.jsx'
 
 const SIZE = 1080
 const SCALE = 0.5
+const STORAGE_KEY = 'designly.project'
 
 let uid = 1
 
@@ -13,11 +14,33 @@ const INITIAL = [
   { id: uid++, type: 'text', x: 240, y: 560, width: 600, height: 80, text: 'Double-click to edit me ✨', fontSize: 32, fontWeight: '500', fontFamily: 'Segoe UI', fill: '#38bdf8', align: 'center' },
 ]
 
+// Read a previously saved project from this browser's storage.
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (!data || !Array.isArray(data.elements)) return null
+    return data
+  } catch {
+    return null
+  }
+}
+
+function download(url, name) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+}
+
 export default function App() {
-  const [elements, setElements] = useState(INITIAL)
+  const saved = useRef(loadSaved())
+  const [elements, setElements] = useState(saved.current?.elements ?? INITIAL)
   const [selectedId, setSelectedId] = useState(null)
-  const [bg, setBg] = useState('#f8fafc')
+  const [bg, setBg] = useState(saved.current?.background ?? '#f8fafc')
   const [exporting, setExporting] = useState(false)
+  const [savedFlash, setSavedFlash] = useState('')
   const [scale, setScale] = useState(SCALE)
   const [showProps, setShowProps] = useState(false)
   const canvasRef = useRef(null)
@@ -25,6 +48,25 @@ export default function App() {
   const dragRef = useRef(null)
 
   const selected = elements.find((e) => e.id === selectedId) || null
+
+  // Keep the highest element id ahead of restored projects.
+  useEffect(() => {
+    const maxId = elements.reduce((m, e) => Math.max(m, e.id), 0)
+    if (maxId >= uid) uid = maxId + 1
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist the project locally after every change (debounced).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ elements, background: bg, savedAt: Date.now() }))
+      } catch {
+        /* storage full — ignore */
+      }
+    }, 400)
+    return () => clearTimeout(t)
+  }, [elements, bg])
 
   // Fit the canvas to the available space (phones get a smaller scale).
   useEffect(() => {
@@ -143,38 +185,138 @@ export default function App() {
     e.target.value = ''
   }
 
-  const exportPng = async () => {
+  const flash = (msg) => {
+    setSavedFlash(msg)
+    setTimeout(() => setSavedFlash(''), 1800)
+  }
+
+  // Render the canvas to a bitmap at the requested pixel size.
+  const renderDataUrl = async (type, quality) => {
+    if (!canvasRef.current) throw new Error('no canvas')
+    const opts = {
+      width: SIZE,
+      height: SIZE,
+      pixelRatio: 1,
+      cacheBust: true,
+      style: { transform: 'none' },
+    }
+    if (type === 'image/png') return toPng(canvasRef.current, opts)
+    if (type === 'image/jpeg') return toJpeg(canvasRef.current, { ...opts, quality, backgroundColor: bg })
+    if (type === 'image/webp') return toCanvas(canvasRef.current, opts).then((c) => c.toDataURL('image/webp', quality))
+    return toSvg(canvasRef.current, opts)
+  }
+
+  const EXPORTS = {
+    png: { label: 'PNG image', mime: 'image/png', ext: 'png' },
+    jpeg: { label: 'JPEG image', mime: 'image/jpeg', ext: 'jpg' },
+    webp: { label: 'WebP image', mime: 'image/webp', ext: 'webp' },
+    svg: { label: 'SVG vector', mime: 'image/svg+xml', ext: 'svg' },
+  }
+
+  const exportAs = async (key) => {
     if (!canvasRef.current || exporting) return
+    const fmt = EXPORTS[key]
+    if (!fmt) return
     setExporting(true)
     try {
-      const url = await toPng(canvasRef.current, {
-        width: SIZE,
-        height: SIZE,
-        pixelRatio: 1,
-        cacheBust: true,
-        style: { transform: 'none' },
-      })
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'design.png'
-      a.click()
+      const url = await renderDataUrl(fmt.mime)
+      download(url, `design.${fmt.ext}`)
+      flash(`Exported ${fmt.label} ✓`)
+    } catch {
+      flash('Export failed ✕')
     } finally {
       setExporting(false)
     }
+  }
+
+  // Save the project as a .designly JSON file (re-openable later).
+  const exportJson = () => {
+    const data = { app: 'designly', version: 1, background: bg, elements }
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+    download(url, 'project.designly.json')
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+    flash('Project file saved ✓')
+  }
+
+  // Open a .designly JSON file and replace the current design.
+  const importJson = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result)
+        if (!data || !Array.isArray(data.elements)) throw new Error('bad file')
+        setElements(data.elements)
+        if (typeof data.background === 'string') setBg(data.background)
+        setSelectedId(null)
+        flash('Project loaded ✓')
+      } catch {
+        flash('Invalid project file ✕')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  // Native share sheet on phones; falls back to a PNG download.
+  const sharePng = async () => {
+    if (!canvasRef.current || exporting) return
+    setExporting(true)
+    try {
+      const url = await renderDataUrl('image/png')
+      const blob = await (await fetch(url)).blob()
+      const file = new File([blob], 'design.png', { type: 'image/png' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'My design' })
+      } else {
+        download(url, 'design.png')
+      }
+    } catch {
+      /* user cancelled share */
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const newProject = () => {
+    if (!confirm('Start a new empty design? Unsaved work in this browser stays until you overwrite it.')) return
+    setElements([])
+    setSelectedId(null)
+    setBg('#f8fafc')
+    flash('New project ✓')
   }
 
   return (
     <div className="app">
       <header className="topbar">
         <div className="logo">✦ Designly</div>
+        {savedFlash && <span className="flash">{savedFlash}</span>}
         <div className="actions">
           <label className="btn" style={{ cursor: 'pointer' }}>
-            ⬆ Upload image
+            ⬆ Image
             <input type="file" accept="image/*" hidden onChange={onImageUpload} />
           </label>
-          <button className="btn primary" onClick={exportPng} disabled={exporting}>
-            {exporting ? 'Exporting…' : '⬇ Export PNG'}
-          </button>
+          <label className="btn" style={{ cursor: 'pointer' }}>
+            📂 Open
+            <input type="file" accept=".json,application/json" hidden onChange={importJson} />
+          </label>
+          <div className="menu-wrap">
+            <button className="btn primary" disabled={exporting}>
+              {exporting ? '…' : '⬇ Export'}
+            </button>
+            <div className="menu">
+              {Object.entries(EXPORTS).map(([key, fmt]) => (
+                <button key={key} className="menu-item" onClick={() => exportAs(key)}>
+                  {fmt.label} <span className="ext">.{fmt.ext}</span>
+                </button>
+              ))}
+              <div className="menu-sep" />
+              <button className="menu-item" onClick={exportJson}>Project file <span className="ext">.json</span></button>
+              <button className="menu-item" onClick={sharePng}>📤 Share (phone)</button>
+              <button className="menu-item danger-item" onClick={newProject}>🆕 New design</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -327,7 +469,7 @@ export default function App() {
           )}
           <p className="hint">
             💡 Drag to move · corner handle to resize · double-click text to edit ·
-            Delete key removes · Export saves a 1080×1080 PNG.
+            Delete key removes · Exports save 1080×1080 · Work auto-saves in this browser.
           </p>
         </aside>
       </div>

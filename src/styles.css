@@ -93,6 +93,78 @@ body {
   cursor: default;
 }
 
+/* ---------- Export dropdown menu ---------- */
+.menu-wrap {
+  position: relative;
+}
+
+.menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 200px;
+  padding: 6px;
+  z-index: 200;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.menu-wrap:hover .menu,
+.menu-wrap:focus-within .menu {
+  display: block;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.menu-item .ext {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.danger-item {
+  color: #f87171;
+}
+
+.menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
+}
+
+.flash {
+  color: #4ade80;
+  font-size: 13px;
+  font-weight: 600;
+  animation: fadein 0.2s ease;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ---------- Layout ---------- */
 .main {
   display: flex;
@@ -307,6 +379,19 @@ body {
   .btn {
     padding: 7px 12px;
     font-size: 12px;
+  }
+
+  /* Export menu opens on tap instead of hover */
+  .menu-wrap .menu {
+    display: none;
+  }
+
+  .menu-wrap:focus-within .menu {
+    display: block;
+  }
+
+  .flash {
+    display: none;
   }
 
   .toolbar {
