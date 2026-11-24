@@ -652,7 +652,7 @@ export default function App() {
             <div className="donate-methods">
               <a
                 className="donate-btn paypal"
-                href="https://www.paypal.com/paypalme/mialstudio"
+                href="https://www.paypal.com/ncp/payment/YH7TD947864HY"
                 target="_blank"
                 rel="noreferrer"
               >
