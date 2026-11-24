@@ -287,7 +287,6 @@ export default function App() {
   }
 
   // ---- Microsoft Office exports ----
-
   // PowerPoint: one slide containing the design as a full-bleed image.
   const exportPptx = async () => {
     if (!canvasRef.current || exporting) return
@@ -307,6 +306,31 @@ export default function App() {
       flash('PowerPoint saved ✓')
     } catch {
       flash('PowerPoint export failed ✕')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  // PDF: A4 page with the design embedded as a full image.
+  const exportPdf = async () => {
+    if (!canvasRef.current || exporting) return
+    setExporting(true)
+    try {
+      const url = await renderDataUrl('image/png')
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      // Fit the square design inside the page with a small margin.
+      const margin = 24
+      const size = Math.min(pageW, pageH) - margin * 2
+      const x = (pageW - size) / 2
+      const y = (pageH - size) / 2
+      pdf.addImage(url, 'PNG', x, y, size, size)
+      pdf.save('design.pdf')
+      flash('PDF saved ✓')
+    } catch {
+      flash('PDF export failed ✕')
     } finally {
       setExporting(false)
     }
@@ -388,6 +412,7 @@ export default function App() {
               <div className="menu-sep" />
               <button className="menu-item" onClick={exportPptx}>PowerPoint <span className="ext">.pptx</span></button>
               <button className="menu-item" onClick={exportDocx}>Word <span className="ext">.docx</span></button>
+              <button className="menu-item" onClick={exportPdf}>PDF document <span className="ext">.pdf</span></button>
               <div className="menu-sep" />
               <button className="menu-item" onClick={exportJson}>Project file <span className="ext">.json</span></button>
               <button className="menu-item" onClick={sharePng}>📤 Share (phone)</button>
